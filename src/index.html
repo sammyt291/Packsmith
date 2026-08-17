@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Packsmith</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" data-view="library" aria-label="Packsmith home"><span class="brand-mark">P</span><span>PACKSMITH</span></button>
+    <nav aria-label="Primary navigation">
+      <button class="nav-item active" data-view="library">Library</button>
+      <button class="nav-item" data-view="discover">Discover</button>
+      <button class="nav-item" data-view="shared">Shared packs</button>
+    </nav>
+    <div class="account-area">
+      <button class="icon-button" id="manage-accounts" title="Manage accounts" aria-label="Manage accounts">👥</button>
+      <button class="account-button" id="account-button"><span class="avatar">?</span><span><small>PLAYING AS</small><strong>No account</strong></span><span class="chevron">⌄</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section id="library-view" class="view active">
+      <div class="hero">
+        <div><p class="eyebrow">YOUR WORKSHOP</p><h1>Forge your next<br><em>adventure.</em></h1><p class="hero-copy">Every world begins with a well-built pack. Create, tune, and share your Minecraft instances from one place.</p></div>
+        <button class="primary large" id="new-instance"><span>＋</span> New instance</button>
+      </div>
+      <div class="toolbar">
+        <div><h2>My instances</h2><span id="instance-count">0 builds</span></div>
+        <div class="toolbar-actions"><label class="search">⌕<input id="instance-search" placeholder="Search instances…"></label><button class="secondary" id="join-code">⌁ Join with code</button></div>
+      </div>
+      <div id="instance-grid" class="instance-grid"></div>
+      <div id="empty-state" class="empty-state"><div class="anvil">⬡</div><h3>Your workbench is empty</h3><p>Create a custom instance or join a shared pack to get started.</p><button class="text-button" id="empty-new">Create your first instance →</button></div>
+    </section>
+
+    <section id="discover-view" class="view placeholder"><p class="eyebrow">COMMUNITY CATALOG</p><h1>Discover packs</h1><p>Import packs from Modrinth, CurseForge, and ATLauncher. Catalog integrations are coming next.</p><div class="provider-row"><span>MODRINTH</span><span>CURSEFORGE</span><span>ATLAUNCHER</span><span class="muted">FTB · LATER</span></div></section>
+    <section id="shared-view" class="view placeholder"><p class="eyebrow">STAY IN SYNC</p><h1>Shared packs</h1><p>Instances joined by code automatically follow their creator's mods and configuration.</p><button class="primary" data-join>Join a pack</button></section>
+  </main>
+
+  <div id="modal-root"></div>
+  <div id="toast" role="status"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>
