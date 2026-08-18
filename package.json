@@ -1,0 +1,20 @@
+{
+  "name": "packsmith",
+  "version": "0.1.0",
+  "description": "A desktop Minecraft Java instance and modpack manager",
+  "main": "src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node --test",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/store.js"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "license": "MIT"
+}
