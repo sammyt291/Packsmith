@@ -1,0 +1,16 @@
+{
+  "name": "packsmith-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Content-addressed Packsmith pack sharing service",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

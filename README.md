@@ -1,29 +1,16 @@
 # Packsmith
 
-Packsmith is a desktop-first Minecraft Java launcher interface built with Electron. It provides local account and instance management, loader/runtime configuration, a compatible-mod picker, and the user experience for synchronized share codes.
+Packsmith is an Electron Minecraft Java launcher with real Microsoft device-code authentication, provider-backed catalogs, portable Java runtimes, and isolated instance installation.
 
-## Run locally
+## Run
+
+Register a **public/native** Microsoft Entra application, enable public client flows, and expose its client ID. No client secret belongs in a desktop app.
 
 ```bash
 npm install
-npm start
-```
-
-For a real Microsoft OAuth device code, register a public/native application in Microsoft Entra ID, enable public client flows, and provide its client ID:
-
-```bash
 PACKSMITH_MS_CLIENT_ID=your-client-id npm start
 ```
 
-Without that variable Packsmith deliberately uses a clearly marked preview flow so the complete interface can be evaluated without shipping a shared application secret. Device authorization opens Microsoft's own page, where Microsoft controls password and 2FA challenges; Packsmith only presents the short-lived code.
+Authentication completes the Microsoft, Xbox Live, XSTS, and Minecraft Services exchanges. Refresh and game credentials are stored in `Packsmith/packsmith.db` under `%PROGRAMDATA%` on Windows, `$XDG_DATA_HOME` on Linux, or `~/.local/share` otherwise. Instances and their downloaded runtimes live beside it in `instances/<name>`.
 
-## Current scope
-
-- Multiple Microsoft-account UI and device-code authentication entry point
-- Vanilla, Fabric, Forge, and NeoForge instance creation
-- Minecraft, Java, Xms/Xmx, and JVM argument settings
-- Searchable mod selection with explicit version pinning
-- Share-code generation and synchronized-pack join experience
-- Modrinth, CurseForge, and ATLauncher discovery placeholders; FTB is explicitly planned for later
-
-Downloading game assets, completing the Xbox/Minecraft token exchange, catalog provider API adapters, launching Java, and the Packsmith synchronization service require production credentials/infrastructure and are intentionally not simulated as complete.
+Version and discovery API responses persist in SQLite and are reused for at least one hour across restarts. Packsmith-server is the separately deployable content-addressed share service; see [`Packsmith-server/README.md`](Packsmith-server/README.md).
