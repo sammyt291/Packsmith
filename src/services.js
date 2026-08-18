@@ -116,6 +116,10 @@ async function completeMicrosoftAuth(device, clientId) {
   let ms;
   while(Date.now()-started < device.expires_in*1000){ await new Promise(r=>setTimeout(r,(device.interval||5)*1000)); const body=new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:device_code',client_id:clientId,device_code:device.device_code}); const response=await fetch(tokenUrl,{method:'POST',body}); const value=await response.json(); if(response.ok){ms=value;break;} if(!['authorization_pending','slow_down'].includes(value.error)) throw new Error(value.error_description||value.error); }
   if(!ms) throw new Error('Microsoft sign-in expired');
+  return completeMinecraftAuth(ms);
+}
+
+async function completeMinecraftAuth(ms) {
   const xbl=await json('https://user.auth.xboxlive.com/user/authenticate',{method:'POST',headers:{'content-type':'application/json','x-xbl-contract-version':'1'},body:JSON.stringify({Properties:{AuthMethod:'RPS',SiteName:'user.auth.xboxlive.com',RpsTicket:`d=${ms.access_token}`},RelyingParty:'http://auth.xboxlive.com',TokenType:'JWT'})});
   const xsts=await json('https://xsts.auth.xboxlive.com/xsts/authorize',{method:'POST',headers:{'content-type':'application/json','x-xbl-contract-version':'1'},body:JSON.stringify({Properties:{SandboxId:'RETAIL',UserTokens:[xbl.Token]},RelyingParty:'rp://api.minecraftservices.com/',TokenType:'JWT'})});
   const uhs=xsts.DisplayClaims.xui[0].uhs; const mc=await json('https://api.minecraftservices.com/authentication/login_with_xbox',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identityToken:`XBL3.0 x=${uhs};${xsts.Token}`})});
@@ -123,4 +127,4 @@ async function completeMicrosoftAuth(device, clientId) {
   return { account:{id:profile.id,name:profile.name,type:'Microsoft',avatar:`https://mc-heads.net/avatar/${profile.id}/64`}, credentials:{...ms,minecraft:mc,obtainedAt:Date.now()} };
 }
 
-module.exports={versionCatalog,discover,installInstance,completeMicrosoftAuth};
+module.exports={versionCatalog,discover,installInstance,completeMicrosoftAuth,completeMinecraftAuth};

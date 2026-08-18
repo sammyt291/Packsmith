@@ -3,10 +3,12 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const { SqliteStore } = require('./store');
-const { versionCatalog, discover, installInstance, completeMicrosoftAuth } = require('./services');
+const { versionCatalog, discover, installInstance, completeMinecraftAuth } = require('./services');
 
 let store; let mainWindow; const authSessions = new Map(); const installing = new Set();
-const CLIENT_ID = process.env.PACKSMITH_MS_CLIENT_ID;
+const DEFAULT_CLIENT_ID = '60cbe4bd-6824-4be1-9685-7fd5c33fff61';
+const CLIENT_ID = process.env.PACKSMITH_MS_CLIENT_ID || DEFAULT_CLIENT_ID;
+const AUTH_SERVER = (process.env.PACKSMITH_AUTH_SERVER || 'https://auth.pack-smith.com').replace(/\/$/,'');
 function dataRoot() { return process.platform === 'win32' ? path.join(process.env.PROGRAMDATA || app.getPath('appData'), 'Packsmith') : path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'Packsmith'); }
 function send(channel, value) { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, value); }
 
@@ -17,11 +19,10 @@ function createWindow() {
 }
 
 async function startLogin() {
-  if (!CLIENT_ID) throw new Error('Set PACKSMITH_MS_CLIENT_ID to the client ID of a Microsoft public/native application.');
-  const body=new URLSearchParams({client_id:CLIENT_ID,scope:'XboxLive.signin offline_access'}); const response=await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode',{method:'POST',body});
-  if(!response.ok) throw new Error('Microsoft sign-in could not be started.'); const device=await response.json(); const sessionId=crypto.randomUUID(); authSessions.set(sessionId,device);
-  completeMicrosoftAuth(device,CLIENT_ID).then(({account,credentials})=>{store.setCredentials(account.id,credentials);store.save({...store.data,accounts:[...store.data.accounts.filter(a=>a.id!==account.id),account],selectedAccountId:account.id});send('auth:result',{sessionId,account});authSessions.delete(sessionId);}).catch(error=>{send('auth:result',{sessionId,error:error.message});authSessions.delete(sessionId);});
-  return {...device,sessionId};
+  const response=await fetch(`${AUTH_SERVER}/v1/auth/microsoft/start`); const auth=await response.json();
+  if(!response.ok)throw new Error(auth.error||'Microsoft sign-in could not be started.'); authSessions.set(auth.sessionId,auth);
+  (async()=>{let ms;while(authSessions.has(auth.sessionId)){await new Promise(r=>setTimeout(r,2000));const result=await fetch(`${AUTH_SERVER}/v1/auth/microsoft/result?session=${encodeURIComponent(auth.sessionId)}`);if(result.status===202)continue;const value=await result.json();if(!result.ok)throw new Error(value.error||'Microsoft sign-in failed.');ms=value.credentials;break;}if(!ms)return;const {account,credentials}=await completeMinecraftAuth(ms);store.setCredentials(account.id,credentials);store.save({...store.data,accounts:[...store.data.accounts.filter(a=>a.id!==account.id),account],selectedAccountId:account.id});send('auth:result',{sessionId:auth.sessionId,account});authSessions.delete(auth.sessionId);})().catch(error=>{send('auth:result',{sessionId:auth.sessionId,error:error.message});authSessions.delete(auth.sessionId);});
+  return auth;
 }
 
 function registerIpc(){
