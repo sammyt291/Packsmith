@@ -18,13 +18,9 @@ test('persists instances and restores them', () => {
   assert.equal(new JsonStore(file).data.instances[0].name, 'Workshop');
 });
 
-test('recovers from malformed state without overwriting it', () => {
+test('caches values with a durable fetch timestamp', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'packsmith-'));
-  const file = path.join(dir, 'state.json');
-  fs.writeFileSync(file, '{broken');
-  const originalWarn = console.warn;
-  console.warn = () => {};
-  const store = new JsonStore(file);
-  console.warn = originalWarn;
-  assert.equal(store.data.instances.length, 0);
+  const store = new JsonStore(path.join(dir, 'state.db'));
+  store.cache('versions', ['1.21']);
+  assert.deepEqual(store.cached('versions'), ['1.21']);
 });

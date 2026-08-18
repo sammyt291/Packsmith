@@ -35,11 +35,12 @@
       <div id="empty-state" class="empty-state"><div class="anvil">⬡</div><h3>Your workbench is empty</h3><p>Create a custom instance or join a shared pack to get started.</p><button class="text-button" id="empty-new">Create your first instance →</button></div>
     </section>
 
-    <section id="discover-view" class="view placeholder"><p class="eyebrow">COMMUNITY CATALOG</p><h1>Discover packs</h1><p>Import packs from Modrinth, CurseForge, and ATLauncher. Catalog integrations are coming next.</p><div class="provider-row"><span>MODRINTH</span><span>CURSEFORGE</span><span>ATLAUNCHER</span><span class="muted">FTB · LATER</span></div></section>
+    <section id="discover-view" class="view placeholder"><p class="eyebrow">COMMUNITY CATALOG</p><h1>Discover packs</h1><p>Popular packs fetched directly from community providers.</p><div id="discover-grid" class="discover-grid"><p>Loading catalog…</p></div></section>
     <section id="shared-view" class="view placeholder"><p class="eyebrow">STAY IN SYNC</p><h1>Shared packs</h1><p>Instances joined by code automatically follow their creator's mods and configuration.</p><button class="primary" data-join>Join a pack</button></section>
   </main>
 
   <div id="modal-root"></div>
+  <aside id="jobs" aria-live="polite"></aside>
   <div id="toast" role="status"></div>
   <script src="renderer.js"></script>
 </body>
