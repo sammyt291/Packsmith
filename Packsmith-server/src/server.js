@@ -1,8 +1,11 @@
 const http = require('node:http');
+const https = require('node:https');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
+
+require('dotenv').config({ path: process.env.PACKSMITH_ENV_FILE || path.join(__dirname, '..', '.env'), quiet: true });
 
 function createService(root = process.env.PACKSMITH_SERVER_DATA || path.join(process.cwd(), 'data')) {
   fs.mkdirSync(path.join(root, 'blobs'), { recursive: true });
@@ -10,7 +13,7 @@ function createService(root = process.env.PACKSMITH_SERVER_DATA || path.join(pro
   const authSessions=new Map();const clientId=process.env.PACKSMITH_MS_CLIENT_ID||'60cbe4bd-6824-4be1-9685-7fd5c33fff61';const clientSecret=process.env.PACKSMITH_MS_CLIENT_SECRET;const redirectUri=process.env.PACKSMITH_MS_REDIRECT_URI||'https://auth.pack-smith.com/';
   db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS packs(code TEXT PRIMARY KEY, manifest TEXT NOT NULL, created_at INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS blobs(hash TEXT PRIMARY KEY, size INTEGER NOT NULL)');
   const reply=(res,status,value)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(value));};
-  return http.createServer(async(req,res)=>{
+  const handleRequest=async(req,res)=>{
     try {
       const url=new URL(req.url,'http://localhost');
       if(req.method==='GET'&&url.pathname==='/v1/auth/microsoft/start'){if(!clientSecret)return reply(res,503,{error:'Microsoft authentication is not configured on the server'});for(const[id,session]of authSessions)if(Date.now()-session.createdAt>10*60*1000)authSessions.delete(id);const sessionId=crypto.randomUUID();const verifier=crypto.randomBytes(32).toString('base64url');const challenge=crypto.createHash('sha256').update(verifier).digest('base64url');authSessions.set(sessionId,{verifier,createdAt:Date.now(),status:'pending'});const query=new URLSearchParams({client_id:clientId,response_type:'code',redirect_uri:redirectUri,response_mode:'query',scope:'XboxLive.signin offline_access',state:sessionId,code_challenge:challenge,code_challenge_method:'S256'});return reply(res,200,{sessionId,authorizationUrl:`https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?${query}`});}
@@ -21,7 +24,10 @@ function createService(root = process.env.PACKSMITH_SERVER_DATA || path.join(pro
       if(req.method==='POST' && req.url==='/v1/packs') { let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>256*1024*1024)throw new Error('Upload too large');chunks.push(chunk);}const input=JSON.parse(Buffer.concat(chunks));if(!input.name||!Array.isArray(input.files))return reply(res,400,{error:'name and files are required'});const files=input.files.map(file=>{const bytes=Buffer.from(file.data,'base64');const hash=crypto.createHash('sha256').update(bytes).digest('hex');const target=path.join(root,'blobs',hash);if(!fs.existsSync(target))fs.writeFileSync(target,bytes,{flag:'wx'});db.prepare('INSERT OR IGNORE INTO blobs(hash,size) VALUES(?,?)').run(hash,bytes.length);return {name:file.name,hash,size:bytes.length};});let code;do{code=`PS-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;}while(db.prepare('SELECT 1 FROM packs WHERE code=?').get(code));const manifest={code,name:input.name,version:input.version||1,files};db.prepare('INSERT INTO packs VALUES(?,?,?)').run(code,JSON.stringify(manifest),Date.now());return reply(res,201,manifest); }
       reply(res,404,{error:'Not found'});
     } catch(error) { reply(res,error.message==='Upload too large'?413:400,{error:error.message}); }
-  });
+  };
+  const certPath=process.env.PACKSMITH_SSL_CERT_PATH;const keyPath=process.env.PACKSMITH_SSL_KEY_PATH;
+  if(Boolean(certPath)!==Boolean(keyPath))throw new Error('PACKSMITH_SSL_CERT_PATH and PACKSMITH_SSL_KEY_PATH must be set together');
+  return certPath?https.createServer({cert:fs.readFileSync(path.resolve(certPath)),key:fs.readFileSync(path.resolve(keyPath))},handleRequest):http.createServer(handleRequest);
 }
-if(require.main===module)createService().listen(Number(process.env.PORT)||8787,()=>console.log(`Packsmith server listening on ${Number(process.env.PORT)||8787}`));
+if(require.main===module){const port=Number(process.env.PORT)||8787;createService().listen(port,()=>console.log(`Packsmith server listening on ${process.env.PACKSMITH_SSL_CERT_PATH?'https':'http'}://0.0.0.0:${port}`));}
 module.exports={createService};
