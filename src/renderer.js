@@ -43,10 +43,9 @@ function manageAccounts() {
 }
 async function beginLogin() {
   let auth; try { auth = await api.startMicrosoftLogin(); } catch(error) { toast(error.message); return; }
-  modal(`<div class="modal-head"><div><h2>Sign in with Microsoft</h2><p>Complete the secure device sign-in in your browser.</p></div><button class="close" data-close>×</button></div><div class="stepper"><span class="on"></span><span class="on"></span><span></span></div><p>Copy this one-time code, then paste it into the Microsoft sign-in page. Microsoft will request your second factor when required.</p><div class="auth-code">${auth.userCode || auth.user_code}</div><p class="notice">🔒 Packsmith never sees your password or two-factor secret. The code expires automatically.</p><div class="modal-actions"><button class="secondary" id="copy-code">Copy code</button><button class="primary" id="open-login">Open Microsoft sign-in</button></div><p class="notice">Waiting for Microsoft to confirm sign-in…</p>`);
-  const code = auth.userCode || auth.user_code; const url = auth.verificationUri || auth.verification_uri;
-  $('#copy-code').onclick = () => { api.copy(code); toast('Authentication code copied'); };
-  $('#open-login').onclick = () => api.openExternal(url);
+  modal(`<div class="modal-head"><div><h2>Sign in with Microsoft</h2><p>Complete the secure sign-in in your browser.</p></div><button class="close" data-close>×</button></div><div class="stepper"><span class="on"></span><span class="on"></span><span></span></div><p>Your browser will return to Packsmith's authentication server after Microsoft confirms your account.</p><p class="notice">🔒 Your password and second factor are entered only on Microsoft's site. The callback uses a one-time PKCE session.</p><div class="modal-actions"><button class="primary" id="open-login">Open Microsoft sign-in</button></div><p class="notice">Waiting for Microsoft to confirm sign-in…</p>`);
+  $('#open-login').onclick = () => api.openExternal(auth.authorizationUrl);
+  api.openExternal(auth.authorizationUrl);
 }
 
 async function newInstance() {
